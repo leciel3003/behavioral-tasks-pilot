@@ -1,0 +1,2244 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <title>Paint Task</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --panel: #ffffff;
+      --ink: #182126;
+      --muted: #657178;
+      --line: #d7d2c8;
+      --accent: #2f7d54;
+      --accent-ink: #ffffff;
+      --target: #c94646;
+      --soft: #eef4f1;
+      --warn: #d08a2d;
+      font-family: "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    body.cursor-hidden,
+    body.cursor-hidden * {
+      cursor: none !important;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app {
+      width: min(1160px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 36px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-end;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(26px, 4vw, 42px);
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .layout {
+      display: block;
+    }
+
+    .settings-toggle {
+      display: block;
+      margin: -8px 0 14px auto;
+      width: 44px;
+      min-height: 44px;
+      padding: 0;
+      border-radius: 50%;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .instruction-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #fff;
+      color: #151a1c;
+      text-align: center;
+    }
+
+    .instruction-overlay[hidden] {
+      display: none;
+    }
+
+    .instruction-content {
+      width: min(680px, 100%);
+      display: grid;
+      gap: 18px;
+    }
+
+    .instruction-content h2 {
+      margin: 0;
+      color: #151a1c;
+      font-size: clamp(28px, 6vw, 48px);
+    }
+
+    .instruction-content p {
+      margin: 0;
+      color: #151a1c;
+      font-size: clamp(17px, 3vw, 23px);
+      line-height: 1.55;
+      white-space: pre-line;
+    }
+
+    .instruction-target-percent {
+      color: #d93025;
+    }
+
+    .instruction-overlay.initial-intro .instruction-content h2 {
+      display: none;
+    }
+
+    .instruction-overlay.initial-intro .instruction-content p {
+      font-size: clamp(25px, 4.8vw, 42px);
+      line-height: 1.45;
+      font-weight: 700;
+      white-space: pre-line;
+    }
+
+    .instruction-countdown {
+      color: #151a1c;
+      font-size: clamp(42px, 10vw, 78px);
+      font-weight: 700;
+      display: none;
+    }
+
+    .instruction-countdown.is-enter-prompt {
+      display: block;
+      font-size: clamp(18px, 3vw, 28px);
+      line-height: 1.35;
+    }
+
+    .settings-drawer {
+      margin: 0 auto 16px;
+      max-width: 760px;
+    }
+
+    #settingsDrawer #startBtn {
+      display: none;
+    }
+
+    .start-row {
+      display: flex;
+      justify-content: center;
+      margin: 4px 0 18px;
+    }
+
+    .start-row button {
+      min-width: 150px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .app.prestart {
+      visibility: hidden;
+    }
+
+    .panel,
+    .stage,
+    .stat,
+    .table-wrap {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 14px 36px rgba(30, 35, 38, 0.1);
+    }
+
+    .panel,
+    .stage {
+      padding: 18px;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 18px;
+    }
+
+    .controls {
+      display: grid;
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 42px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--ink);
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    button {
+      min-height: 42px;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--ink);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    button:disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+    }
+
+    .primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 600;
+    }
+
+    .stage-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 30px;
+      padding: 5px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .sheet-status {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .checkbox-label {
+      display: flex;
+      grid-template-columns: none;
+      gap: 8px;
+      align-items: center;
+      color: var(--ink);
+    }
+
+    .checkbox-label input {
+      width: auto;
+      min-height: 0;
+    }
+
+    .task-area {
+      display: grid;
+      grid-template-columns: minmax(210px, 300px) minmax(250px, 1fr);
+      gap: 28px;
+      align-items: center;
+      padding: 14px 0 8px;
+    }
+
+    .battery-wrap {
+      position: relative;
+      display: grid;
+      justify-items: center;
+      gap: 12px;
+    }
+
+    .level-guidance {
+      min-width: 190px;
+      min-height: 34px;
+      color: #151a1c;
+      font-size: 22px;
+      font-weight: 600;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .level-guidance.is-feedback {
+      color: #151a1c;
+      font-weight: 700;
+    }
+
+    .battery {
+      position: relative;
+      width: min(260px, 64vw);
+      height: 470px;
+      border: 5px solid #a7d9e8;
+      border-radius: 0 0 28px 28px;
+      background: linear-gradient(90deg, rgba(156, 221, 241, .14) 0%, rgba(232, 249, 255, .25) 22%, rgba(191, 235, 248, .18) 50%, rgba(144, 211, 234, .15) 100%);
+      box-shadow: inset 12px 0 20px rgba(76, 154, 190, .12), inset -12px 0 20px rgba(76, 154, 190, .1), 0 14px 22px rgba(30, 35, 38, .12);
+      overflow: hidden;
+      clip-path: polygon(
+        34% 0,
+        66% 0,
+        66% 22%,
+        76% 38%,
+        88% 58%,
+        97% 78%,
+        97% 87%,
+        93% 94%,
+        86% 100%,
+        14% 100%,
+        7% 94%,
+        3% 87%,
+        3% 78%,
+        12% 58%,
+        24% 38%,
+        34% 22%
+      );
+    }
+
+    .battery::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 16%;
+      width: 18%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .52), transparent);
+      transform: skewX(-8deg);
+      pointer-events: none;
+      z-index: 3;
+      mix-blend-mode: screen;
+    }
+
+    .battery::before {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      border: 3px solid rgba(255, 255, 255, .48);
+      clip-path: polygon(
+        36% 2%, 64% 2%, 64% 23%, 74% 39%, 86% 59%,
+        95% 78%, 95% 86%, 91% 93%, 84% 98%, 16% 98%,
+        9% 93%, 5% 86%, 5% 78%, 14% 59%, 26% 39%, 36% 23%
+      );
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .battery-cells {
+      position: relative;
+      display: grid;
+      grid-template-rows: repeat(20, minmax(0, 1fr));
+      gap: 3px;
+      height: 100%;
+      padding: 12px 12px 14px;
+      z-index: 1;
+      clip-path: polygon(
+        36% 2%, 64% 2%, 64% 23%, 74% 39%, 86% 59%,
+        95% 78%, 95% 86%, 91% 93%, 84% 98%, 16% 98%,
+        9% 93%, 5% 86%, 5% 78%, 14% 59%, 26% 39%, 36% 23%
+      );
+    }
+
+    .cell {
+      min-height: 0;
+      border: 1px solid rgba(128, 194, 216, .38);
+      border-radius: 3px;
+      background: rgba(236, 251, 255, .18);
+    }
+
+    .cell.filled {
+      border-color: #2f7d54;
+      background: linear-gradient(90deg, #65b67c 0%, #4fa86b 20%, #8bd99b 43%, #4fa86b 68%, #236b46 100%);
+      box-shadow: inset 0 2px 4px rgba(220, 255, 230, .8), inset 0 -2px 5px rgba(14, 59, 35, .32);
+    }
+
+    .cell.target {
+      outline: 0;
+    }
+
+    .paint-fill {
+      position: absolute;
+      left: -3%;
+      right: -3%;
+      bottom: 0;
+      border-top: 3px solid #2f7d54;
+      border-radius: 50% 50% 0 0;
+      background: linear-gradient(90deg, #65b67c 0%, #4fa86b 20%, #8bd99b 43%, #4fa86b 68%, #236b46 100%);
+      box-shadow: inset 0 7px 12px rgba(220, 255, 230, .72), 0 -3px 5px rgba(14, 59, 35, .3);
+      transition: height 120ms linear;
+    }
+
+    .target-line {
+      position: absolute;
+      left: -48px;
+      right: -48px;
+      top: 50%;
+      height: 6px;
+      transform: translateY(-3px);
+      border-radius: 999px;
+      background: #d93025;
+      box-shadow: 0 0 0 2px rgba(217, 48, 37, .16), 0 2px 8px rgba(143, 41, 37, .32);
+      z-index: 6;
+      pointer-events: none;
+    }
+
+    .target-label {
+      position: absolute;
+      right: calc(100% + 22px);
+      top: 50%;
+      transform: translateY(-50%);
+      color: #8f2925;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .level {
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .trial-panel {
+      display: grid;
+      gap: 16px;
+      align-content: center;
+      min-height: 420px;
+    }
+
+    .prompt {
+      margin: 0;
+      font-size: clamp(24px, 3.4vw, 38px);
+      font-weight: 700;
+      line-height: 1.16;
+    }
+
+    .message {
+      min-height: 52px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .app.task-running > header,
+    .app.task-running > .settings-toggle,
+    .app.task-running .stage-top,
+    .app.task-running .start-row,
+    .app.task-running .prompt,
+    .app.task-running .message,
+    .app.task-running .level,
+    .app.task-running .stats,
+    .app.task-running .table-wrap {
+      display: none;
+    }
+
+    .app.task-running .task-area {
+      min-height: 100vh;
+      min-height: 100svh;
+      grid-template-columns: minmax(220px, 300px);
+      grid-template-areas:
+        "battery"
+        "button"
+        "guidance";
+      align-content: center;
+      justify-items: center;
+      gap: 14px;
+      padding: 0;
+    }
+
+    .app.task-running .stage {
+      min-height: 100vh;
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      box-shadow: none;
+      background: transparent;
+    }
+
+    .app.task-running .trial-panel {
+      grid-area: button;
+      min-height: 0;
+      justify-items: center;
+      gap: 0;
+    }
+
+    .app.task-running .battery-wrap {
+      grid-area: battery;
+      gap: 0;
+    }
+
+    .app.task-running .level-guidance {
+      grid-area: guidance;
+    }
+
+    .practice-hint {
+      position: relative;
+      top: 18px;
+      margin: 0 0 12px;
+      color: #000;
+      font-size: 27px;
+      font-weight: 400;
+      text-align: center;
+    }
+
+    .practice-hint[hidden] {
+      display: none;
+    }
+
+    .app.task-running .response {
+      border-color: #687174;
+      background: linear-gradient(180deg, #aeb6b8 0%, #858e91 48%, #687174 100%);
+      color: #fff;
+      box-shadow: 0 5px 0 #4b5355, 0 10px 16px rgba(47, 54, 56, .22), inset 0 -8px 10px rgba(35, 40, 42, .28);
+    }
+
+    .app.task-running .response:not(:disabled):active {
+      box-shadow: 0 1px 0 #4b5355, 0 5px 9px rgba(47, 54, 56, .2), inset 0 -8px 10px rgba(35, 40, 42, .28);
+    }
+
+    .response {
+      width: min(300px, 80vw);
+      height: 64px;
+      min-height: 0;
+      padding: 0;
+      border: 4px solid #1e5b3c;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #65b67c 0%, #388c58 48%, #236b46 100%);
+      color: #fff;
+      font-size: 26px;
+      font-weight: 700;
+      box-shadow: 0 5px 0 #123c29, 0 10px 16px rgba(22, 69, 43, .22), inset 0 -8px 10px rgba(14, 59, 35, .28);
+      transition: transform 80ms ease, box-shadow 80ms ease;
+    }
+
+    .response:not(:disabled):active {
+      transform: translateY(7px);
+      box-shadow: 0 1px 0 #123c29, 0 5px 9px rgba(22, 69, 43, .2), inset 0 -8px 10px rgba(14, 59, 35, .28);
+    }
+
+    .response.is-pressed:not(:disabled) {
+      transform: translateY(7px);
+      box-shadow: 0 1px 0 #4b5355, 0 5px 9px rgba(47, 54, 56, .2), inset 0 -8px 10px rgba(35, 40, 42, .28);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .app:not(.settings-open) .stats,
+    .app:not(.settings-open) .table-wrap {
+      display: none;
+    }
+
+    .stat {
+      padding: 13px 14px;
+      box-shadow: none;
+    }
+
+    .stat small {
+      display: block;
+      color: var(--muted);
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+
+    .stat strong {
+      font-size: 22px;
+    }
+
+    .table-wrap {
+      margin-top: 18px;
+      max-height: 260px;
+      overflow: auto;
+      box-shadow: none;
+    }
+
+    table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: var(--panel);
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    th:first-child,
+    td:first-child,
+    th:nth-child(4),
+    td:nth-child(4),
+    th:last-child,
+    td:last-child {
+      text-align: left;
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 20px;
+    }
+
+    @media (max-width: 860px) {
+      body {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      header,
+      .stage-top {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .layout,
+      .task-area {
+        grid-template-columns: 1fr;
+      }
+
+      .task-area {
+        gap: 14px;
+        padding-top: 8px;
+      }
+
+      .app.task-running .task-area {
+        grid-template-columns: 1fr;
+      }
+
+      .trial-panel {
+        min-height: 210px;
+        text-align: center;
+        justify-items: center;
+      }
+
+      .battery {
+        height: 390px;
+      }
+
+      .stats {
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
+      }
+
+      .response {
+        width: min(300px, 80vw);
+        height: 58px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .app {
+        width: calc(100% - 12px);
+        padding: max(10px, env(safe-area-inset-top)) 0 max(18px, env(safe-area-inset-bottom));
+      }
+
+      header {
+        margin-bottom: 8px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .subtitle {
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      .panel,
+      .stage {
+        padding: 10px;
+      }
+
+      .stage-top {
+        gap: 8px;
+      }
+
+      .task-area {
+        gap: 12px;
+      }
+
+      .app.task-running .task-area {
+        min-height: 100svh;
+        gap: 12px;
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .app.task-running .stage {
+        min-height: 100svh;
+      }
+
+      .battery {
+        width: min(210px, 58vw);
+        height: clamp(280px, 45svh, 330px);
+        border-width: 4px;
+      }
+
+      .battery-cells { gap: 2px; padding: 7px 8px 9px; }
+
+      .target-line {
+        left: -36px;
+        right: -36px;
+        height: 5px;
+        transform: translateY(-2.5px);
+      }
+
+      .level {
+        font-size: 22px;
+      }
+
+      .target-label {
+        right: auto;
+        left: calc(100% + 10px);
+        font-size: 13px;
+      }
+
+      .prompt {
+        font-size: 24px;
+      }
+
+      .message {
+        font-size: 14px;
+        min-height: 42px;
+      }
+
+      .practice-hint {
+        top: 10px;
+        margin-bottom: 6px;
+        font-size: 22px;
+      }
+
+      .response,
+      .app.task-running .response {
+        width: min(320px, 86vw);
+        height: 64px;
+        font-size: 24px;
+      }
+
+      .button-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .button-row button:first-child,
+      .button-row button:last-child {
+        grid-column: 1 / -1;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .table-wrap {
+        max-height: 210px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .battery {
+        width: min(190px, 56vw);
+        height: clamp(250px, 42svh, 300px);
+      }
+
+      .response,
+      .app.task-running .response {
+        height: 60px;
+      }
+
+      .app.task-running .task-area {
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="instruction-overlay" id="instructionOverlay" hidden>
+    <div class="instruction-content">
+      <h2 id="instructionTitle">준비</h2>
+      <p id="instructionDetail"></p>
+      <div class="instruction-countdown" id="instructionCountdown">이해했으면 엔터를 눌러 주세요.</div>
+    </div>
+  </div>
+
+  <main class="app prestart">
+    <header>
+      <div>
+        <h1>물감 채우기</h1>
+        <p class="subtitle">스페이스바를 눌러 실린더 안의 물감 양을 50% 근처로 유지하세요.</p>
+      </div>
+      <span class="badge" id="runState">대기</span>
+    </header>
+    <button class="settings-toggle" id="settingsToggle" type="button" aria-label="설정 열기" aria-expanded="false">설정</button>
+
+    <section class="layout">
+      <aside class="panel settings-drawer" id="settingsDrawer" hidden>
+        <h2>설정</h2>
+        <div class="controls">
+          <label>
+            속도 모드
+            <select id="speedMode">
+              <option value="protocol">본 실험 속도</option>
+              <option value="demo">데모 속도</option>
+            </select>
+          </label>
+          <label>
+            연습 시간
+            <input id="practiceDuration" type="number" min="10" max="10" value="10" disabled>
+          </label>
+          <label>
+            정확도 허용 범위(ms)
+            <input id="accuracyWindow" type="number" min="50" max="1000" step="50" value="300">
+          </label>
+          <label>
+            참가자 ID
+            <input id="participantId" type="text" placeholder="예: P001">
+          </label>
+          <label>
+            Google Apps Script 웹앱 URL
+            <input id="sheetUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+          </label>
+          <label class="checkbox-label">
+            <input id="autoUpload" type="checkbox" checked>
+            종료 후 Google Sheets에 자동 저장
+          </label>
+          <div class="badge">Main 1 1분 20초 + Main 2 1분 20초</div>
+          <p class="sheet-status" id="sheetStatus">검사 종료 후 Google Sheets에 저장할 수 있습니다.</p>
+        </div>
+        <div class="button-row">
+          <button class="primary" id="startBtn" type="button">시작</button>
+          <button id="resetBtn" type="button">초기화</button>
+          <button id="exportBtn" type="button" disabled>CSV 저장</button>
+          <button id="uploadBtn" type="button" disabled>Google Sheets 저장</button>
+        </div>
+      </aside>
+
+      <section class="stage">
+        <div class="stage-top">
+          <h2 id="trialTitle">준비</h2>
+          <span class="badge" id="trialBadge">Space / 버튼 반응</span>
+        </div>
+
+        <div class="start-row">
+          <button class="primary" id="beginBtn" type="button">시작</button>
+        </div>
+
+        <p class="practice-hint" id="practiceHint" hidden></p>
+
+        <div class="task-area">
+          <div class="battery-wrap">
+            <div class="battery" aria-label="20칸 물감 실린더, 50% 목표선">
+              <div class="battery-cells" id="batteryCells"></div>
+              <div class="target-line"><span class="target-label">50%</span></div>
+            </div>
+            <div class="level" id="levelLabel">10/20칸</div>
+          </div>
+
+          <div class="level-guidance" id="levelGuidance" aria-live="polite"></div>
+
+          <div class="trial-panel">
+            <p class="prompt" id="promptText">시작을 누르면 진행됩니다.</p>
+            <div class="message" id="trialMessage">물감의 양을 10칸(50%) 근처로 유지하세요.</div>
+            <button class="primary response" id="responseBtn" type="button" aria-label="스페이스바 반응 버튼" disabled>SPACE</button>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <small>정확도</small>
+            <strong id="accStat">-</strong>
+          </div>
+          <div class="stat">
+            <small>평균 오차</small>
+            <strong id="meanErrorStat">-</strong>
+          </div>
+          <div class="stat">
+            <small>오차 SD</small>
+            <strong id="sdErrorStat">-</strong>
+          </div>
+          <div class="stat">
+            <small>반응 수</small>
+            <strong id="countStat">0</strong>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Phase</th>
+                <th>Block</th>
+                <th>Event</th>
+                <th>Condition</th>
+                <th>Segment</th>
+                <th>Rate</th>
+                <th>Elapsed(ms)</th>
+                <th>Error(ms)</th>
+                <th>ACC</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="resultBody">
+              <tr><td class="empty" colspan="10">아직 기록된 반응이 없습니다.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>    const CELL_COUNT = 20;
+    const TARGET_CELLS = 10;
+    const CONDITIONS = {
+      normal: { label: "Baseline", rate: 1.5 },
+      fast: { label: "Fast", rate: 2.5 },
+      slow: { label: "Slow", rate: 0.5 }
+    };
+    const RHYTHM_TOLERANCE_MS = 300;
+    const PAINT_INTRO_MS = 4000;
+    const MAIN_PATTERNS = [
+      ["fast", "fast", "slow", "slow"],
+      ["fast", "slow", "slow", "fast"],
+      ["slow", "slow", "fast", "fast"],
+      ["slow", "fast", "fast", "slow"]
+    ];
+    const DEFAULT_SHEET_URL = "https://script.google.com/macros/s/AKfycbwPbSnnB-OQPT15lBwMk7f9yaiZexMsY4HV2TrW-gyJ7ylFNIxIrf19rSEpFvx0iJfOww/exec";
+    const WORKFLOW_KEY = "behavioralTaskWorkflow";
+    const workflow = (() => {
+      try { return JSON.parse(sessionStorage.getItem(WORKFLOW_KEY) || "null"); } catch (error) { return null; }
+    })();
+    const entryCondition = workflow?.entry_condition || new URLSearchParams(location.search).get("entry") || "standalone";
+    const ENTRY_LABELS = {
+      combined_paint_first: "통합 과제: 물감 먼저",
+      combined_coin_first: "통합 과제: 별 먼저",
+      paint_only: "물감 과제 단독",
+      coin_only: "별 과제 단독",
+      standalone: "단독 실행"
+    };
+    const els = {
+      speedMode: document.getElementById("speedMode"),
+      practiceDuration: document.getElementById("practiceDuration"),
+      accuracyWindow: document.getElementById("accuracyWindow"),
+      participantId: document.getElementById("participantId"),
+      sheetUrl: document.getElementById("sheetUrl"),
+      autoUpload: document.getElementById("autoUpload"),
+      startBtn: document.getElementById("startBtn"),
+      beginBtn: document.getElementById("beginBtn"),
+      resetBtn: document.getElementById("resetBtn"),
+      exportBtn: document.getElementById("exportBtn"),
+      uploadBtn: document.getElementById("uploadBtn"),
+      sheetStatus: document.getElementById("sheetStatus"),
+      responseBtn: document.getElementById("responseBtn"),
+      runState: document.getElementById("runState"),
+      trialTitle: document.getElementById("trialTitle"),
+      trialBadge: document.getElementById("trialBadge"),
+      promptText: document.getElementById("promptText"),
+      trialMessage: document.getElementById("trialMessage"),
+      levelGuidance: document.getElementById("levelGuidance"),
+      practiceHint: document.getElementById("practiceHint"),
+      batteryCells: document.getElementById("batteryCells"),
+      levelLabel: document.getElementById("levelLabel"),
+      accStat: document.getElementById("accStat"),
+      meanErrorStat: document.getElementById("meanErrorStat"),
+      sdErrorStat: document.getElementById("sdErrorStat"),
+      countStat: document.getElementById("countStat"),
+      resultBody: document.getElementById("resultBody")
+    };
+
+    const state = {
+      running: false,
+      accepting: false,
+      cells: TARGET_CELLS,
+      sequence: [],
+      index: 0,
+      trial: null,
+      trialStart: 0,
+      segmentStartedAt: 0,
+      lastResponse: 0,
+      responseCount: 0,
+      segmentResponseCount: 0,
+      segmentLastResponseAt: 0,
+      segmentFirstResponseAt: 0,
+      keyEventCount: 0,
+      pendingKeydowns: {},
+      drainTimer: null,
+      endTimer: null,
+      results: [],
+      sessionId: "",
+      startedAt: "",
+      finishedAt: "",
+      uploadInProgress: false,
+      uploadSent: false,
+      instructionCountdownTimer: null,
+      pendingInstructionAction: null,
+      practiceFeedbackTimer: null
+    };
+    let allowPageExit = false;
+
+    const settingsToggle = document.getElementById("settingsToggle");
+    const settingsDrawer = document.getElementById("settingsDrawer");
+    const app = document.querySelector(".app");
+
+    settingsToggle.addEventListener("click", () => {
+      const willOpen = settingsDrawer.hidden;
+      settingsDrawer.hidden = !willOpen;
+      app.classList.toggle("settings-open", willOpen);
+      settingsToggle.setAttribute("aria-expanded", String(willOpen));
+      settingsToggle.setAttribute("aria-label", willOpen ? "설정 닫기" : "설정 열기");
+    });
+
+    function loadSheetSettings() {
+      els.sheetUrl.value = workflow?.sheet_url || DEFAULT_SHEET_URL;
+      els.participantId.value = workflow?.participant_id || localStorage.getItem("rateShiftParticipantId") || "";
+      els.autoUpload.checked = workflow ? true : localStorage.getItem("rateShiftAutoUpload") !== "0";
+    }
+
+    function saveSheetSettings() {
+      localStorage.setItem("rateShiftSheetUrl", els.sheetUrl.value.trim());
+      localStorage.setItem("rateShiftParticipantId", els.participantId.value.trim());
+      localStorage.setItem("rateShiftAutoUpload", els.autoUpload.checked ? "1" : "0");
+      updateUploadButton();
+    }
+
+    function makeSessionId() {
+      if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return window.crypto.randomUUID();
+      }
+      return `session-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function updateUploadButton() {
+      const hasRows = state.results.length > 0;
+      const hasUrl = els.sheetUrl.value.trim().length > 0;
+      els.uploadBtn.disabled = state.running || state.uploadInProgress || !hasRows || !hasUrl;
+    }
+
+    function clamp(value, min, max, fallback) {
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed)) return fallback;
+      return Math.min(max, Math.max(min, parsed));
+    }
+
+    function shuffle(values) {
+      const copy = values.slice();
+      for (let i = copy.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    const CHALLENGE_PATTERNS = [
+      ["fast", "fast", "slow", "slow"],
+      ["fast", "slow", "slow", "fast"],
+      ["slow", "slow", "fast", "fast"],
+      ["slow", "fast", "fast", "slow"]
+    ];
+
+    function pickChallengePattern(previousPatternText = "") {
+      const candidates = CHALLENGE_PATTERNS.filter((pattern) => pattern.join("-") !== previousPatternText);
+      return shuffle(candidates)[0];
+    }
+
+    function instructionSegment(block, title, detail, badge, resetBattery = false) {
+      return {
+        type: "instruction",
+        phase: "Instruction",
+        block,
+        conditionLabel: "안내",
+        title,
+        detail,
+        badge,
+        durationSeconds: 4,
+        resetBattery
+      };
+    }
+
+    function mainBlockSegments(blockName, challengePattern, startSegmentIndex) {
+      const segments = [];
+      let segmentIndex = startSegmentIndex;
+      let previousCondition = "start";
+      challengePattern.forEach((challenge, slotIndex) => {
+        segments.push({
+          phase: "Main",
+          block: blockName,
+          segmentIndex: segmentIndex++,
+          challengeSlot: slotIndex + 1,
+          condition: "normal",
+          conditionLabel: "Baseline",
+          durationSeconds: 10,
+          visible: false,
+          transitionFrom: previousCondition,
+          challengePattern: challengePattern.join("-")
+        });
+        previousCondition = "baseline";
+        segments.push({
+          phase: "Main",
+          block: blockName,
+          segmentIndex: segmentIndex++,
+          challengeSlot: slotIndex + 1,
+          condition: challenge,
+          conditionLabel: CONDITIONS[challenge].label,
+          durationSeconds: 10,
+          visible: false,
+          transitionFrom: "baseline",
+          challengePattern: challengePattern.join("-")
+        });
+        previousCondition = challenge;
+      });
+      return segments;
+    }
+
+    function buildSequence() {
+      const practiceSeconds = 5;
+      const mainPatterns = shuffle(MAIN_PATTERNS).slice(0, 2);
+      const main1Pattern = mainPatterns[0];
+      const main2Pattern = mainPatterns[1];
+
+      const practiceConditions = ["normal", "fast", "slow"];
+      const practice = practiceConditions.map((condition, i) => ({
+        phase: "Practice",
+        block: "Practice",
+        segmentIndex: i + 1,
+        trialNumber: i + 1,
+        condition,
+        conditionLabel: CONDITIONS[condition].label,
+        durationSeconds: practiceSeconds,
+        visible: true,
+        transitionFrom: i === 0 ? "start" : practiceConditions[i - 1],
+        challengePattern: "practice-normal-fast-slow"
+      }));
+
+      const main1 = mainBlockSegments("Main 1", main1Pattern, 1);
+      const main2 = mainBlockSegments("Main 2", main2Pattern, 1);
+      return [
+        instructionSegment(
+          "Practice",
+          "연습 안내",
+          "스페이스바 또는 반응 버튼을 누르면 물감이 한 칸 채워집니다. 물감은 조건마다 다른 빠르기로 사라집니다. 세 가지 속도를 각각 5초씩 연습합니다.",
+          "연습 준비",
+          true
+        ),
+        ...practice,
+        instructionSegment(
+          "Main 1",
+          "이제 첫 번째 시행이 시작됩니다.",
+          "조건 이름은 숨겨집니다. 물감이 사라지는 속도에 맞춰 50% 근처를 유지하세요.",
+          "Main 1 준비",
+          true
+        ),
+        ...main1,
+        instructionSegment(
+          "Main 2",
+          "이제 두 번째 시행이 시작됩니다.",
+          "이번에도 조건 이름은 숨겨집니다. 속도 변화에 맞춰 50% 근처를 유지하세요.",
+          "Main 2 준비",
+          true
+        ),
+        ...main2
+      ];
+    }
+
+    function multiplier() {
+      return els.speedMode.value === "demo" ? 2 : 1;
+    }
+
+    function intervalMs(conditionKey) {
+      return 1000 / (CONDITIONS[conditionKey].rate * multiplier());
+    }
+
+    function nowIsoFromTaskTime(taskElapsedMs) {
+      return state.startedAt
+        ? new Date(Date.parse(state.startedAt) + Math.round(taskElapsedMs)).toISOString()
+        : new Date().toISOString();
+    }
+
+    function getLevelStatus(cellsAfter) {
+      if (cellsAfter < TARGET_CELLS) return "underfilled";
+      if (cellsAfter > TARGET_CELLS) return "overfilled";
+      return "target";
+    }
+
+    function getTimingStatus(intervalErrorMs, windowMs) {
+      if (Math.abs(intervalErrorMs) <= windowMs) return "on_time";
+      return intervalErrorMs < 0 ? "early" : "late";
+    }
+
+    function baseEventRow(eventType, now = performance.now()) {
+      const trial = state.trial;
+      const condition = CONDITIONS[trial.condition];
+      const elapsedMs = state.trialStart ? Math.round(now - state.trialStart) : 0;
+      const segmentElapsedMs = state.segmentStartedAt ? Math.round(now - state.segmentStartedAt) : "";
+      return {
+        participant_id: els.participantId.value.trim(),
+        response_recorded_at: nowIsoFromTaskTime(elapsedMs),
+        event_type: eventType,
+        condition: trial.conditionLabel,
+        task: "paint_task",
+        task_version: "paint_2m40s_main_practice5s_2fast2slow_each_main_segmentEvents_splitMetrics_practiceAccFeedback",
+        session_id: state.sessionId,
+        session_started_at: state.startedAt,
+        phase: trial.phase,
+        block: trial.block,
+        segment_index: trial.segmentIndex,
+        challenge_slot: trial.challengeSlot || "",
+        response_index: "",
+        segment_response_count: state.segmentResponseCount,
+        condition_key: trial.condition,
+        transition_from: trial.transitionFrom,
+        challenge_pattern: trial.challengePattern,
+        rate_cells_per_sec: condition.rate,
+        effective_rate_cells_per_sec: condition.rate * multiplier(),
+        ideal_interval_ms: Math.round(intervalMs(trial.condition)),
+        accuracy_window_ms: RHYTHM_TOLERANCE_MS,
+        elapsed_ms: elapsedMs,
+        segment_elapsed_ms: segmentElapsedMs,
+        segment_start_ms: state.segmentStartedAt && state.trialStart ? Math.round(state.segmentStartedAt - state.trialStart) : "",
+        segment_end_ms: eventType === "segment_end" ? elapsedMs : "",
+        is_transition_window: segmentElapsedMs !== "" && segmentElapsedMs <= 5000 ? 1 : 0,
+        first_response_latency_ms: "",
+        within_segment_response_interval_ms: "",
+        response_interval_ms: "",
+        interval_error_ms: "",
+        acc: "",
+        target_hit_acc: "",
+        interval_accuracy: "",
+        level_status: "",
+        timing_status: "",
+        level_proximity: "",
+        level_proximity_percent: "",
+        level_error_cells: "",
+        timing_correct: "",
+        status: "",
+        filled_cells_before_response: state.cells,
+        filled_cells_after_response: state.cells,
+        cell_change_direction: "",
+        cell_change_cells: "",
+        input_source: "",
+        input_key: "",
+        input_code: "",
+        input_location: "",
+        input_repeat: "",
+        input_recorded_at: "",
+        key_event_index: "",
+        key_hold_duration_ms: "",
+        is_initial_press: "",
+        is_extra_press: 0,
+        is_auto_repeat: "",
+        second_bin: ""
+      };
+    }
+
+    function recordSegmentBoundary(eventType, now = performance.now()) {
+      if (!state.running || !state.trial || state.trial.type === "instruction") return;
+      state.results.push(baseEventRow(eventType, now));
+      renderResults();
+    }
+
+    function cellChangeMetrics(before, after) {
+      const levelErrorCells = Math.abs(after - TARGET_CELLS);
+      const levelAccuracy = Math.max(0, 1 - (levelErrorCells / TARGET_CELLS));
+      const targetHitAcc = after === TARGET_CELLS ? 1 : 0;
+      const direction = after > before ? "increase" : after < before ? "decrease" : "none";
+
+      return {
+        acc: targetHitAcc,
+        target_hit_acc: targetHitAcc,
+        level_status: getLevelStatus(after),
+        level_proximity: Number(levelAccuracy.toFixed(3)),
+        level_proximity_percent: Math.round(levelAccuracy * 100),
+        level_error_cells: levelErrorCells,
+        status: getLevelStatus(after),
+        filled_cells_before_response: before,
+        filled_cells_after_response: after,
+        cell_change_direction: direction,
+        cell_change_cells: after - before
+      };
+    }
+
+    function recordCellDecrease(before, after, now = performance.now()) {
+      if (!state.running || !state.trial || state.trial.type === "instruction" || before === after) return;
+      const metrics = cellChangeMetrics(before, after);
+      state.results.push({
+        ...baseEventRow("cell_decrease", now),
+        ...metrics
+      });
+      renderResults();
+    }
+
+    function setCells(value) {
+      const previousCells = state.cells;
+      state.cells = Math.max(0, Math.min(CELL_COUNT, Math.round(value)));
+      renderBattery();
+      if (
+        state.running &&
+        state.accepting &&
+        state.trial?.phase === "Practice" &&
+        previousCells !== TARGET_CELLS &&
+        state.cells === TARGET_CELLS
+      ) {
+        showPracticeAccuracyFeedback();
+      }
+    }
+
+    function renderBattery() {
+      els.batteryCells.innerHTML = "";
+      for (let n = CELL_COUNT; n >= 1; n -= 1) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        if (n <= state.cells) cell.classList.add("filled");
+        if (n === TARGET_CELLS) cell.classList.add("target");
+        cell.setAttribute("aria-label", `${n}번 칸 ${n <= state.cells ? "충전됨" : "비어 있음"}`);
+        els.batteryCells.appendChild(cell);
+      }
+      els.levelLabel.textContent = `${state.cells}/${CELL_COUNT}칸`;
+      if (els.levelGuidance.classList.contains("is-feedback")) return;
+      if (state.cells <= TARGET_CELLS - 2) {
+        els.levelGuidance.textContent = "물감을 채워주세요.";
+      } else if (state.cells >= TARGET_CELLS + 2) {
+        els.levelGuidance.textContent = "물감을 줄여주세요.";
+      } else {
+        els.levelGuidance.textContent = "";
+      }
+    }
+
+    function clearPracticeFeedback(restoreGuidance = true) {
+      window.clearTimeout(state.practiceFeedbackTimer);
+      state.practiceFeedbackTimer = null;
+      const wasFeedbackVisible = els.levelGuidance.classList.contains("is-feedback");
+      els.levelGuidance.classList.remove("is-feedback");
+      if (restoreGuidance) renderBattery();
+      else if (wasFeedbackVisible) els.levelGuidance.textContent = "";
+    }
+
+    function showPracticeAccuracyFeedback() {
+      window.clearTimeout(state.practiceFeedbackTimer);
+      els.levelGuidance.classList.add("is-feedback");
+      els.levelGuidance.textContent = "정확해요!";
+      state.practiceFeedbackTimer = window.setTimeout(() => {
+        clearPracticeFeedback(true);
+      }, 650);
+    }
+
+    function setLocked(locked) {
+      els.speedMode.disabled = locked;
+      els.practiceDuration.disabled = true;
+      els.accuracyWindow.disabled = locked;
+      els.participantId.disabled = locked;
+      els.sheetUrl.disabled = locked;
+      els.autoUpload.disabled = locked;
+      els.startBtn.disabled = locked;
+      els.beginBtn.disabled = locked;
+      updateUploadButton();
+    }
+
+    function setMessage(prompt, detail, badge) {
+      els.promptText.textContent = prompt;
+      els.trialMessage.textContent = detail;
+      if (badge) els.trialBadge.textContent = badge;
+    }
+
+    function instructionCopy(block) {
+      if (block === "Practice") {
+        return {
+          title: "연습 시행입니다.",
+          detail: "스페이스바를 눌러 물감을 한 칸씩 채우세요.\n물감이 사라지는 속도는 조건마다 다릅니다.\n세 가지 속도를 각각 5초씩 연습합니다."
+        };
+      }
+      if (block === "Main 1") {
+        return {
+          title: "이제 첫 번째 시행이 시작됩니다.",
+          detail: "본 시행에서는 물감이 떨어지는 속도가 중간에 바뀔 수 있습니다.\n물감의 양을 50% 근처로 유지하세요."
+        };
+      }
+      return {
+        title: "이제 두 번째 시행이 시작됩니다.",
+        detail: "본 시행에서는 물감이 떨어지는 속도가 중간에 바뀔 수 있습니다. 물감의 양을 50% 근처로 유지하세요."
+      };
+    }
+
+    function hideInstructionScreen() {
+      window.clearInterval(state.instructionCountdownTimer);
+      state.instructionCountdownTimer = null;
+      state.pendingInstructionAction = null;
+      document.getElementById("instructionOverlay").hidden = true;
+    }
+
+    function waitForInstructionEnter(action) {
+      const prompt = document.getElementById("instructionCountdown");
+      window.clearInterval(state.instructionCountdownTimer);
+      state.instructionCountdownTimer = null;
+      prompt.textContent = "이해했으면 엔터를 눌러 주세요.";
+      prompt.classList.add("is-enter-prompt");
+      prompt.style.display = "block";
+      state.pendingInstructionAction = action;
+    }
+
+    function completeInstructionEnter() {
+      if (!state.pendingInstructionAction) return false;
+      const action = state.pendingInstructionAction;
+      state.pendingInstructionAction = null;
+      document.getElementById("instructionCountdown").classList.remove("is-enter-prompt");
+      action();
+      return true;
+    }
+
+    function startIntroScreen(done) {
+      const overlay = document.getElementById("instructionOverlay");
+      const countdown = document.getElementById("instructionCountdown");
+      document.getElementById("instructionTitle").textContent = "과제 안내";
+      document.getElementById("instructionDetail").innerHTML = '실린더 안의 물감이 사라집니다.<br>스페이스바를 눌러 물감의 양을<br><span class="instruction-target-percent">50%</span>에 유지하세요.';
+      countdown.classList.remove("is-enter-prompt");
+      overlay.hidden = false;
+      waitForInstructionEnter(() => {
+        hideInstructionScreen();
+        done();
+      });
+    }
+
+    function showInitialIntro() {
+      document.body.classList.add("cursor-hidden");
+      const overlay = document.getElementById("instructionOverlay");
+      const countdown = document.getElementById("instructionCountdown");
+      overlay.classList.add("initial-intro");
+      document.getElementById("instructionTitle").textContent = "과제 안내";
+      document.getElementById("instructionDetail").innerHTML = '실린더 안의 물감이 사라집니다.<br>스페이스바를 눌러 물감의 양을<br><span class="instruction-target-percent">50%</span>에 유지하세요.';
+      countdown.classList.remove("is-enter-prompt");
+      overlay.hidden = false;
+      waitForInstructionEnter(() => {
+        startRun(true);
+      });
+    }
+
+    async function enterFullscreen() {
+      if (document.fullscreenElement || !document.documentElement.requestFullscreen) return;
+      try {
+        await document.documentElement.requestFullscreen();
+      } catch (error) {
+        console.info("Fullscreen request was ignored by the browser.", error);
+      }
+    }
+
+    function startRun(skipIntro = false) {
+      resetRun(true);
+      enterFullscreen();
+      document.body.classList.add("cursor-hidden");
+      saveSheetSettings();
+      state.sessionId = makeSessionId();
+      state.startedAt = new Date().toISOString();
+      state.finishedAt = "";
+      state.uploadSent = false;
+      els.sheetStatus.textContent = "검사 진행 중입니다. 종료 후 Google Sheets에 저장됩니다.";
+      state.sequence = buildSequence();
+      state.running = true;
+      app.classList.add("task-running");
+      setLocked(true);
+      els.runState.textContent = "진행 중";
+      document.querySelector(".stage").scrollIntoView({ behavior: "smooth", block: "start" });
+      if (skipIntro) {
+        nextTrial(0);
+      } else {
+        app.classList.add("prestart");
+        startIntroScreen(() => {
+          app.classList.remove("prestart");
+          nextTrial(600);
+        });
+      }
+    }
+
+    function nextTrial(delay) {
+      window.clearTimeout(state.drainTimer);
+      window.clearTimeout(state.endTimer);
+      if (state.index >= state.sequence.length) {
+        finishRun();
+        return;
+      }
+      state.drainTimer = window.setTimeout(startTrial, delay);
+    }
+
+    function startTrial() {
+      state.trial = state.sequence[state.index];
+      if (state.trial.type === "instruction") {
+        els.practiceHint.hidden = true;
+        startInstruction();
+        return;
+      }
+      hideInstructionScreen();
+      if (state.trial.phase === "Practice") {
+        const hints = {
+          normal: "물감이 보통 속도로 떨어집니다.",
+          fast: "물감이 빨리 떨어집니다.",
+          slow: "물감이 천천히 떨어집니다."
+        };
+        els.practiceHint.textContent = hints[state.trial.condition] || "";
+        els.practiceHint.hidden = false;
+      } else {
+        els.practiceHint.hidden = true;
+      }
+      const title = state.trial.visible
+        ? `연습 ${state.trial.trialNumber}: ${state.trial.conditionLabel}`
+        : `${state.trial.block} - Segment ${state.trial.segmentIndex}`;
+      els.trialTitle.textContent = title;
+      const badge = state.trial.visible ? state.trial.conditionLabel : "조건 숨김";
+
+      if (state.index === 0) {
+        state.responseCount = 0;
+        state.accepting = false;
+        setCells(TARGET_CELLS);
+        els.responseBtn.disabled = true;
+        setMessage("준비", "잠시 뒤 50%에서 물감이 사라지기 시작합니다.", badge);
+        state.drainTimer = window.setTimeout(beginCurrentSegment, 900);
+      } else {
+        beginCurrentSegment();
+      }
+    }
+
+    function startInstruction() {
+      state.accepting = false;
+      els.responseBtn.disabled = true;
+      app.classList.remove("prestart");
+      document.getElementById("instructionOverlay").classList.remove("initial-intro");
+      if (state.trial.resetBattery) {
+        setCells(TARGET_CELLS);
+        state.lastResponse = 0;
+      }
+      if (state.index === 0) state.responseCount = 0;
+      els.trialTitle.textContent = state.trial.title;
+      setMessage(state.trial.title, state.trial.detail, state.trial.badge);
+      const copy = instructionCopy(state.trial.block);
+      const overlay = document.getElementById("instructionOverlay");
+      const countdown = document.getElementById("instructionCountdown");
+      document.getElementById("instructionTitle").textContent = copy.title;
+      document.getElementById("instructionDetail").textContent = copy.detail;
+      countdown.classList.remove("is-enter-prompt");
+      overlay.hidden = false;
+      waitForInstructionEnter(endTrial);
+    }
+
+    function beginCurrentSegment() {
+      if (!state.running || !state.trial) return;
+      clearPracticeFeedback(false);
+      const now = performance.now();
+      state.trialStart = state.trialStart || now;
+      state.segmentStartedAt = now;
+      state.segmentResponseCount = 0;
+      state.segmentLastResponseAt = 0;
+      state.segmentFirstResponseAt = 0;
+      state.lastResponse = 0;
+      state.accepting = true;
+      els.responseBtn.disabled = false;
+
+      const condition = CONDITIONS[state.trial.condition];
+      const ideal = Math.round(intervalMs(state.trial.condition));
+      const detail = state.trial.visible
+        ? `${state.trial.conditionLabel}: 약 ${ideal}ms마다 눌러 10칸을 유지하세요.`
+        : `${state.trial.block}: 조건은 숨겨져 있습니다. 물감이 사라지는 속도에 맞춰 10칸을 유지하세요.`;
+      setMessage("리듬 유지", detail, state.trial.visible ? state.trial.conditionLabel : "조건 숨김");
+      recordSegmentBoundary("segment_start", now);
+      state.drainTimer = window.setTimeout(drainOneCell, intervalMs(state.trial.condition));
+      state.endTimer = window.setTimeout(endTrial, state.trial.durationSeconds * 1000);
+    }
+
+    function drainOneCell() {
+      if (!state.running || !state.trial) return;
+      const now = performance.now();
+      const before = state.cells;
+      setCells(state.cells - 1);
+      recordCellDecrease(before, state.cells, now);
+      state.drainTimer = window.setTimeout(drainOneCell, intervalMs(state.trial.condition));
+    }
+
+    function buildKeyboardMeta(event) {
+      const now = performance.now();
+      const keyId = event.code || event.key || "Space";
+      const pending = state.pendingKeydowns[keyId];
+      state.keyEventCount += 1;
+      const holdDuration = pending ? Math.max(0, Math.round(now - pending.performanceTime)) : "";
+      const meta = {
+        input_source: "keyboard",
+        input_key: event.key,
+        input_code: event.code,
+        input_location: event.location,
+        input_repeat: event.repeat ? 1 : 0,
+        input_recorded_at: new Date().toISOString(),
+        key_event_index: state.keyEventCount,
+        key_hold_duration_ms: event.repeat ? holdDuration : "",
+        is_initial_press: state.segmentResponseCount === 0 && !event.repeat ? 1 : 0,
+        is_extra_press: 0,
+        is_auto_repeat: event.repeat ? 1 : 0,
+        pendingKeyId: ""
+      };
+
+      if (!event.repeat) {
+        state.pendingKeydowns[keyId] = {
+          performanceTime: now,
+          responseRow: null
+        };
+        meta.pendingKeyId = keyId;
+      }
+      return meta;
+    }
+
+    function finishKeyboardHold(event) {
+      const keyId = event.code || event.key || "Space";
+      const pending = state.pendingKeydowns[keyId];
+      if (!pending) return;
+      const holdDuration = Math.max(0, Math.round(performance.now() - pending.performanceTime));
+      if (pending.responseRow) {
+        pending.responseRow.key_hold_duration_ms = holdDuration;
+      }
+      delete state.pendingKeydowns[keyId];
+    }
+
+    function clearPendingKeyHolds() {
+      Object.keys(state.pendingKeydowns).forEach((keyId) => {
+        const pending = state.pendingKeydowns[keyId];
+        if (pending?.responseRow) {
+          pending.responseRow.key_hold_duration_ms = Math.max(0, Math.round(performance.now() - pending.performanceTime));
+        }
+      });
+      state.pendingKeydowns = {};
+    }
+
+    function respond(inputMeta = {}) {
+      if (!state.running || !state.accepting || !state.trial) return;
+
+      const now = performance.now();
+      const before = state.cells;
+      setCells(state.cells + 1);
+
+      const condition = CONDITIONS[state.trial.condition];
+      const ideal = intervalMs(state.trial.condition);
+      const isFirstResponseInSegment = state.segmentResponseCount === 0;
+      const firstResponseLatency = isFirstResponseInSegment ? now - state.segmentStartedAt : "";
+      const withinSegmentInterval = isFirstResponseInSegment ? "" : now - state.segmentLastResponseAt;
+      const timingInterval = isFirstResponseInSegment ? firstResponseLatency : withinSegmentInterval;
+      const error = timingInterval - ideal;
+      const windowMs = RHYTHM_TOLERANCE_MS;
+      const after = state.cells;
+      const intervalAccuracy = Math.abs(error) <= windowMs ? 1 : 0;
+      const changeMetrics = cellChangeMetrics(before, after);
+      const timingStatus = getTimingStatus(error, windowMs);
+      const elapsedMs = Math.round(now - state.trialStart);
+
+      state.responseCount += 1;
+      state.segmentResponseCount += 1;
+      if (isFirstResponseInSegment) state.segmentFirstResponseAt = now;
+      state.segmentLastResponseAt = now;
+      state.lastResponse = now;
+
+      const row = {
+        ...baseEventRow("space_response", now),
+        response_index: state.responseCount,
+        segment_response_count: state.segmentResponseCount,
+        first_response_latency_ms: isFirstResponseInSegment ? Math.round(firstResponseLatency) : "",
+        within_segment_response_interval_ms: isFirstResponseInSegment ? "" : Math.round(withinSegmentInterval),
+        response_interval_ms: isFirstResponseInSegment ? "" : Math.round(withinSegmentInterval),
+        interval_error_ms: Math.round(error),
+        ...changeMetrics,
+        interval_accuracy: intervalAccuracy,
+        timing_status: timingStatus,
+        timing_correct: intervalAccuracy,
+        input_source: inputMeta.input_source || "button",
+        input_key: inputMeta.input_key || "",
+        input_code: inputMeta.input_code || "",
+        input_location: inputMeta.input_location ?? "",
+        input_repeat: inputMeta.input_repeat ?? "",
+        input_recorded_at: inputMeta.input_recorded_at || "",
+        key_event_index: inputMeta.key_event_index || "",
+        key_hold_duration_ms: inputMeta.key_hold_duration_ms ?? "",
+        is_initial_press: inputMeta.is_initial_press ?? (isFirstResponseInSegment ? 1 : 0),
+        is_extra_press: inputMeta.is_extra_press ?? 0,
+        is_auto_repeat: inputMeta.is_auto_repeat ?? 0,
+        second_bin: Math.floor((now - state.segmentStartedAt) / 1000)
+      };
+      state.results.push(row);
+      if (inputMeta.pendingKeyId && state.pendingKeydowns[inputMeta.pendingKeyId]) {
+        state.pendingKeydowns[inputMeta.pendingKeyId].responseRow = row;
+      }
+
+      setMessage("리듬 유지", `${Math.round(error)}ms 오차, 현재 ${after}/${CELL_COUNT}칸`, state.trial.visible ? state.trial.conditionLabel : "조건 숨김");
+      renderResults();
+      return row;
+    }
+
+    function getStatus(error, cellsAfter, windowMs) {
+      if (cellsAfter > TARGET_CELLS + 1) return "overcharged";
+      if (cellsAfter < TARGET_CELLS - 1) return "underfilled";
+      if (Math.abs(error) <= windowMs) return "correct";
+      return error < 0 ? "early" : "late";
+    }
+
+    function endTrial() {
+      if (!state.trial) return;
+      window.clearTimeout(state.drainTimer);
+      window.clearTimeout(state.endTimer);
+      clearPracticeFeedback(false);
+      if (state.trial.type === "instruction") hideInstructionScreen();
+      if (state.trial.type !== "instruction") {
+        clearPendingKeyHolds();
+        recordSegmentBoundary("segment_end");
+      }
+      const finished = state.trial;
+      state.trial = null;
+      state.index += 1;
+      if (state.index >= state.sequence.length) {
+        state.accepting = false;
+        els.responseBtn.disabled = true;
+        finishRun();
+        return;
+      }
+      const next = state.sequence[state.index];
+      const label = next.visible ? next.conditionLabel : "조건 숨김";
+      setMessage("조건 전환", `${finished.conditionLabel} → ${next.visible ? next.conditionLabel : "다음 구간"}`, label);
+      nextTrial(0);
+    }
+
+    function showWorkflowTransition() {
+      const overlay = document.getElementById("instructionOverlay");
+      overlay.classList.add("initial-intro");
+      document.getElementById("instructionTitle").textContent = "";
+      document.getElementById("instructionDetail").textContent =
+        "첫 번째 과제가 종료되었습니다.\n두 번째 과제가 곧 시작됩니다.";
+      document.getElementById("instructionCountdown").style.display = "none";
+      overlay.hidden = false;
+    }
+
+    function showFinalCompletionScreen() {
+      if (document.querySelector(".final-completion-screen")) return;
+      const screen = document.createElement("main");
+      screen.className = "final-completion-screen";
+      screen.setAttribute("role", "status");
+      screen.setAttribute("aria-live", "polite");
+      screen.innerHTML = `
+        <div>
+          <div>실험이 종료되었습니다.<br>감사합니다.</div>
+          <button type="button" id="finalBackToMainBtn" style="margin-top:28px;width:min(380px,84vw);min-height:140px;padding:18px 14px;border:1px solid #b8bec0;border-radius:10px;background:linear-gradient(180deg,#f0f2f2 0%,#d9ddde 100%);color:#303638;font-size:clamp(24px,6vw,32px);font-weight:800;line-height:1.3;text-align:center;box-shadow:0 7px 0 #aeb5b7,0 12px 18px rgba(45,52,54,.16);cursor:pointer;">돌아가기</button>
+        </div>
+      `;
+      screen.style.cssText = "position:fixed;inset:0;z-index:999999;display:grid;place-items:center;padding:32px;background:#ffffff;color:#111111;font-size:clamp(25px,4.8vw,42px);font-weight:700;line-height:1.35;text-align:center;white-space:pre-line;";
+      document.body.appendChild(screen);
+      document.getElementById("finalBackToMainBtn").addEventListener("click", () => {
+        sessionStorage.removeItem(WORKFLOW_KEY);
+        allowPageExit = true;
+        window.location.href = "main.html";
+      });
+    }
+
+    async function finishRun() {
+      hideInstructionScreen();
+      state.running = false;
+      clearPracticeFeedback(false);
+      document.body.classList.remove("cursor-hidden");
+      app.classList.remove("task-running");
+      state.accepting = false;
+      state.trial = null;
+      state.finishedAt = new Date().toISOString();
+      setLocked(false);
+      els.responseBtn.disabled = true;
+      els.exportBtn.disabled = state.results.length === 0;
+      updateUploadButton();
+      els.runState.textContent = "완료";
+      els.trialTitle.textContent = "완료";
+      const hasNextTask = Boolean(workflow && workflow.current_index < workflow.tasks.length - 1);
+      if (!hasNextTask) showFinalCompletionScreen();
+      setMessage(
+        hasNextTask ? "첫 번째 실험이 종료되었습니다." : "실험이 종료되었습니다. 감사합니다.",
+        hasNextTask ? "이제 두 번째 실험이 시작됩니다." : "",
+        hasNextTask ? "다음 실험 준비" : "완료"
+      );
+      if (hasNextTask) showWorkflowTransition();
+      if (workflow) {
+        await uploadToGoogleSheets();
+        window.setTimeout(advanceWorkflow, hasNextTask ? 3000 : 1500);
+      } else if (els.autoUpload.checked && els.sheetUrl.value.trim()) {
+        uploadToGoogleSheets();
+      }
+    }
+
+    function advanceWorkflow() {
+      if (!workflow) return;
+      workflow.current_index += 1;
+      if (workflow.current_index < workflow.tasks.length) {
+        sessionStorage.setItem(WORKFLOW_KEY, JSON.stringify(workflow));
+        const next = workflow.tasks[workflow.current_index];
+        const file = next === "paint" ? "paint.html" : "star-picking-task.html";
+        allowPageExit = true;
+        window.location.href = `${file}?entry=${encodeURIComponent(workflow.entry_condition)}`;
+      } else {
+        sessionStorage.removeItem(WORKFLOW_KEY);
+        allowPageExit = true;
+        window.location.href = "main.html?completed=1";
+      }
+    }
+
+    function isMainPageShortcut(event) {
+      return event.ctrlKey && event.shiftKey && (event.key === "1" || event.code === "Digit1" || event.code === "Numpad1");
+    }
+
+    function shouldBlockExperimentShortcut(event) {
+      if (isMainPageShortcut(event)) return false;
+      const key = event.key || "";
+      const code = event.code || "";
+      const lowerKey = key.toLowerCase();
+      const ctrlOrMeta = event.ctrlKey || event.metaKey;
+
+      if (key === "F5" || key === "F12") return true;
+      if (key === "Tab") return true;
+      if (key === "BrowserBack" || key === "BrowserForward" || code === "BrowserBack" || code === "BrowserForward") return true;
+      if (key === "Backspace" && !isEditableTarget(event.target)) return true;
+      if (event.altKey && (key === "ArrowLeft" || key === "ArrowRight" || key === "F4")) return true;
+      if (ctrlOrMeta && ["r", "s", "p", "f", "l", "k", "w", "t", "n", "o", "u"].includes(lowerKey)) return true;
+      if (ctrlOrMeta && event.shiftKey && ["i", "j", "c", "delete"].includes(lowerKey)) return true;
+      return false;
+    }
+
+    function isEditableTarget(target) {
+      if (!target) return false;
+      const tagName = target.tagName ? target.tagName.toLowerCase() : "";
+      return target.isContentEditable || tagName === "input" || tagName === "textarea" || tagName === "select";
+    }
+
+    function isExperimentNavigationLocked() {
+      const overlay = document.getElementById("instructionOverlay");
+      const isIntroVisible = Boolean(overlay && !overlay.hidden);
+      const isFinalScreen = Boolean(document.querySelector(".final-completion-screen"));
+      return !state.finishedAt && !isFinalScreen && (state.running || isIntroVisible);
+    }
+
+    function warnBeforeLeaving(event) {
+      if (allowPageExit || !isExperimentNavigationLocked()) return;
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    function setFinalCompletionMessage(message) {
+      const screen = document.querySelector(".final-completion-screen");
+      if (screen) screen.textContent = message;
+    }
+
+    function wait(ms) {
+      return new Promise((resolve) => window.setTimeout(resolve, ms));
+    }
+
+    async function waitForUploadToFinish(maxWaitMs = 15000) {
+      const startedAt = Date.now();
+      while (state.uploadInProgress && Date.now() - startedAt < maxWaitMs) {
+        await wait(100);
+      }
+      return !state.uploadInProgress;
+    }
+
+    async function saveFinishedSessionBeforeMainPage() {
+      if (!state.finishedAt) return true;
+      if (!state.results.length) return true;
+
+      setFinalCompletionMessage("저장 중입니다.\n잠시만 기다려주세요.");
+
+      await waitForUploadToFinish();
+      if (!state.uploadSent) {
+        await uploadToGoogleSheets();
+      }
+      await waitForUploadToFinish();
+
+      if (!state.uploadSent) {
+        setFinalCompletionMessage("저장에 실패했습니다.\n잠시 후 다시 눌러주세요.");
+        return false;
+      }
+      return true;
+    }
+
+    async function goToMainPage(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const canLeave = await saveFinishedSessionBeforeMainPage();
+      if (!canLeave) return;
+      window.clearTimeout(state.drainTimer);
+      window.clearTimeout(state.endTimer);
+      window.clearInterval(state.instructionCountdownTimer);
+      clearPracticeFeedback(false);
+      document.body.classList.remove("cursor-hidden");
+      state.running = false;
+      state.accepting = false;
+      sessionStorage.removeItem(WORKFLOW_KEY);
+      allowPageExit = true;
+      window.location.href = "main.html";
+    }
+
+    function resetRun(clearResults) {
+      hideInstructionScreen();
+      window.clearTimeout(state.drainTimer);
+      window.clearTimeout(state.endTimer);
+      clearPracticeFeedback(false);
+      document.body.classList.remove("cursor-hidden");
+      state.running = false;
+      app.classList.remove("task-running");
+      state.accepting = false;
+      state.trial = null;
+      state.index = 0;
+      state.sequence = [];
+      state.trialStart = 0;
+      state.segmentStartedAt = 0;
+      state.lastResponse = 0;
+      state.responseCount = 0;
+      state.segmentResponseCount = 0;
+      state.segmentLastResponseAt = 0;
+      state.segmentFirstResponseAt = 0;
+      state.keyEventCount = 0;
+      state.pendingKeydowns = {};
+      state.uploadInProgress = false;
+      state.uploadSent = false;
+      setCells(TARGET_CELLS);
+      setLocked(false);
+      els.responseBtn.disabled = true;
+      updateUploadButton();
+      els.runState.textContent = "대기";
+      els.trialTitle.textContent = "준비";
+      els.trialBadge.textContent = "Space / 버튼 반응";
+      setMessage("시작을 누르면 진행됩니다.", "총 15초 연습 후 조건 숨김 본 시행 2분 40초가 진행됩니다.");
+      if (clearResults) {
+        state.results = [];
+        renderResults();
+      }
+      els.sheetStatus.textContent = els.sheetUrl.value.trim()
+        ? "검사 종료 후 Google Sheets에 저장할 수 있습니다."
+        : "시트 URL을 넣으면 결과를 Google Sheets로 보낼 수 있습니다.";
+    }
+
+    function mean(values) {
+      if (!values.length) return null;
+      return values.reduce((sum, value) => sum + value, 0) / values.length;
+    }
+
+    function sd(values) {
+      if (values.length < 2) return null;
+      const avg = mean(values);
+      const variance = values.reduce((sum, value) => sum + (value - avg) ** 2, 0) / (values.length - 1);
+      return Math.sqrt(variance);
+    }
+
+    function renderResults() {
+      els.exportBtn.disabled = state.results.length === 0;
+      updateUploadButton();
+      if (!state.results.length) {
+        els.resultBody.innerHTML = '<tr><td class="empty" colspan="10">아직 기록된 반응이 없습니다.</td></tr>';
+        els.accStat.textContent = "-";
+        els.meanErrorStat.textContent = "-";
+        els.sdErrorStat.textContent = "-";
+        els.countStat.textContent = "0";
+        return;
+      }
+
+      const responseRows = state.results.filter((row) => row.event_type === "space_response");
+      const cellChangeRows = state.results.filter((row) => row.cell_change_direction === "increase" || row.cell_change_direction === "decrease");
+      els.resultBody.innerHTML = cellChangeRows.map((row) => `
+        <tr>
+          <td>${row.phase}</td>
+          <td>${row.block}</td>
+          <td>${row.event_type === "space_response" ? row.response_index : row.cell_change_direction}</td>
+          <td>${row.condition}</td>
+          <td>${row.segment_index}</td>
+          <td>${row.rate_cells_per_sec}/s</td>
+          <td>${row.segment_elapsed_ms}</td>
+          <td>${row.interval_error_ms}</td>
+          <td>${row.target_hit_acc}</td>
+          <td>${row.timing_status ? `${row.level_status}/${row.timing_status}` : row.level_status}</td>
+        </tr>
+      `).join("") || '<tr><td class="empty" colspan="10">아직 기록된 반응이 없습니다.</td></tr>';
+
+      const errors = responseRows.map((row) => Number(row.interval_error_ms)).filter(Number.isFinite);
+      const acc = cellChangeRows.length
+        ? cellChangeRows.reduce((sum, row) => sum + Number(row.target_hit_acc || 0), 0) / cellChangeRows.length
+        : null;
+      const avg = mean(errors);
+      const spread = sd(errors);
+      els.accStat.textContent = acc === null ? "-" : `${Math.round(acc * 100)}%`;
+      els.meanErrorStat.textContent = avg === null ? "-" : `${Math.round(avg)} ms`;
+      els.sdErrorStat.textContent = spread === null ? "-" : `${Math.round(spread)} ms`;
+      els.countStat.textContent = String(cellChangeRows.length);
+      updateUploadButton();
+    }
+
+    function csvEscape(value) {
+      const text = String(value ?? "");
+      return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+    }
+
+    function exportCsv() {
+      const headers = [
+        "entry_condition",
+        "participant_id",
+        "task",
+        "task_version",
+        "session_id",
+        "session_started_at",
+        "session_finished_at",
+        "trial_index",
+        "condition",
+        "event_type",
+        "response_recorded_at",
+        "event_time_ms",
+        "delay_duration_ms",
+        "delay_onset_ms",
+        "key_event_index",
+        "time_since_delay_onset_ms",
+        "key_hold_duration_ms",
+        "is_initial_press",
+        "is_extra_press",
+        "is_auto_repeat",
+        "second_bin",
+        "phase",
+        "block",
+        "segment_index",
+        "challenge_slot",
+        "response_index",
+        "condition_key",
+        "transition_from",
+        "challenge_pattern",
+        "rate_cells_per_sec",
+        "effective_rate_cells_per_sec",
+        "ideal_interval_ms",
+        "elapsed_ms",
+        "segment_elapsed_ms",
+        "segment_start_ms",
+        "segment_end_ms",
+        "segment_response_count",
+        "is_transition_window",
+        "first_response_latency_ms",
+        "within_segment_response_interval_ms",
+        "response_interval_ms",
+        "interval_error_ms",
+        "acc",
+        "target_hit_acc",
+        "interval_accuracy",
+        "level_status",
+        "timing_status",
+        "level_proximity",
+        "level_proximity_percent",
+        "level_error_cells",
+        "timing_correct",
+        "status",
+        "filled_cells_before_response",
+        "filled_cells_after_response",
+        "cell_change_direction",
+        "cell_change_cells",
+        "input_source",
+        "input_key",
+        "input_code",
+        "input_location",
+        "input_repeat",
+        "input_recorded_at",
+        "speed_mode",
+        "accuracy_window_ms"
+      ];
+      const rows = buildUploadRows();
+      const csv = [
+        headers.join(","),
+        ...rows.map((row) => headers.map((key) => csvEscape(row[key])).join(","))
+      ].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `paint-task-${new Date().toISOString().slice(0, 19).replaceAll(":", "-")}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function buildUploadRows() {
+      return state.results.map((row) => ({
+        ...row,
+        entry_condition: ENTRY_LABELS[entryCondition] || entryCondition,
+        session_finished_at: state.finishedAt || new Date().toISOString(),
+        trial_index: row.segment_index,
+        event_time_ms: row.elapsed_ms,
+        delay_duration_ms: "",
+        delay_onset_ms: "",
+        time_since_delay_onset_ms: "",
+        key_event_index: row.key_event_index ?? "",
+        key_hold_duration_ms: row.key_hold_duration_ms ?? "",
+        is_initial_press: row.is_initial_press ?? "",
+        is_extra_press: row.is_extra_press ?? 0,
+        is_auto_repeat: row.is_auto_repeat ?? "",
+        second_bin: row.second_bin ?? "",
+        speed_mode: els.speedMode.value,
+        user_agent: navigator.userAgent
+      }));
+    }
+
+    async function uploadToGoogleSheets() {
+      const url = els.sheetUrl.value.trim();
+      if (!url) {
+        els.sheetStatus.textContent = "Google Apps Script 웹앱 URL을 먼저 입력하세요.";
+        updateUploadButton();
+        return;
+      }
+      if (!state.results.length) {
+        els.sheetStatus.textContent = "저장할 반응 데이터가 아직 없습니다.";
+        updateUploadButton();
+        return;
+      }
+
+      saveSheetSettings();
+      state.uploadInProgress = true;
+      updateUploadButton();
+      els.sheetStatus.textContent = "Google Sheets로 전송 중입니다...";
+
+      const rows = buildUploadRows();
+      const payload = {
+        task: "paint_task",
+        task_version: "paint_2m40s_main_practice5s_2fast2slow_each_main_segmentEvents_splitMetrics_practiceAccFeedback",
+        participant_id: els.participantId.value.trim(),
+        entry_condition: entryCondition,
+        session_id: state.sessionId,
+        session_started_at: state.startedAt,
+        session_finished_at: state.finishedAt || new Date().toISOString(),
+        row_count: rows.length,
+        rows
+      };
+
+      try {
+        await fetch(url, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+        state.uploadSent = true;
+        els.sheetStatus.textContent = `전송 요청 완료: ${rows.length}개 이벤트`;
+      } catch (error) {
+        els.sheetStatus.textContent = "전송 실패: 네트워크와 Apps Script URL을 확인하세요.";
+      } finally {
+        state.uploadInProgress = false;
+        updateUploadButton();
+      }
+    }
+
+    els.participantId.addEventListener("change", saveSheetSettings);
+    els.sheetUrl.addEventListener("change", saveSheetSettings);
+    els.sheetUrl.addEventListener("input", updateUploadButton);
+    els.autoUpload.addEventListener("change", saveSheetSettings);
+    els.startBtn.addEventListener("click", () => startRun(false));
+    els.beginBtn.addEventListener("click", () => startRun(false));
+    els.resetBtn.addEventListener("click", () => resetRun(true));
+    els.responseBtn.addEventListener("click", () => respond({ input_source: "button", is_auto_repeat: 0 }));
+    els.exportBtn.addEventListener("click", exportCsv);
+    els.uploadBtn.addEventListener("click", uploadToGoogleSheets);
+    document.addEventListener("pointerdown", enterFullscreen);
+    document.addEventListener("keydown", enterFullscreen);
+    window.addEventListener("keydown", (event) => {
+      if (isMainPageShortcut(event)) {
+        goToMainPage(event);
+        return;
+      }
+      if (shouldBlockExperimentShortcut(event)) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (event.key === "Enter" && completeInstructionEnter()) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (event.code === "Space") {
+        event.preventDefault();
+        if (event.repeat) return;
+        els.responseBtn.classList.add("is-pressed");
+        if (state.running && state.accepting && state.trial) {
+          respond(buildKeyboardMeta(event));
+        }
+      }
+    });
+    window.addEventListener("keyup", (event) => {
+      if (shouldBlockExperimentShortcut(event)) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (event.code === "Space") {
+        finishKeyboardHold(event);
+        els.responseBtn.classList.remove("is-pressed");
+      }
+    });
+    window.addEventListener("blur", () => {
+      clearPendingKeyHolds();
+      els.responseBtn.classList.remove("is-pressed");
+    });
+    window.addEventListener("beforeunload", warnBeforeLeaving);
+
+    loadSheetSettings();
+    resetRun(true);
+    showInitialIntro();
+  </script>
+</body>
+</html>
+
