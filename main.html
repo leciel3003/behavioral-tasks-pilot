@@ -182,7 +182,7 @@
   <main class="app">
     <header>
       <h1>행동과제</h1>
-      <p class="subtitle">세션 번호를 입력한 뒤 과제 순서를 선택해 주세요.</p>
+      <p class="subtitle">세션 번호를 입력한 뒤 수행할 과제를 선택해 주세요.</p>
     </header>
 
     <section class="identity" aria-labelledby="session-label">
@@ -190,12 +190,12 @@
       <input id="participantId" type="text" autocomplete="off" inputmode="text" placeholder="세션 번호 입력">
     </section>
 
-    <section class="button-grid" aria-label="통합 과제 순서 선택">
-      <button class="task-button" type="button" data-entry="combined_paint_first" data-tasks="paint,star-picking-task">
-        <strong>물감 모으기<br>→ 별 따기</strong>
+    <section class="button-grid" aria-label="단독 과제 선택">
+      <button class="task-button" type="button" data-entry="paint_only" data-tasks="paint">
+        <strong>물감 모으기</strong>
       </button>
-      <button class="task-button" type="button" data-entry="combined_coin_first" data-tasks="star-picking-task,paint">
-        <strong>별 따기<br>→ 물감 모으기</strong>
+      <button class="task-button" type="button" data-entry="coin_only" data-tasks="star-picking-task">
+        <strong>별 따기</strong>
       </button>
     </section>
 

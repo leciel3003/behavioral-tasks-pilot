@@ -50,6 +50,15 @@
       padding: 24px 0 36px;
     }
 
+    .app.task-running {
+      width: 100%;
+      min-height: 100vh;
+      min-height: 100svh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
     header {
       display: flex;
       justify-content: space-between;
@@ -485,8 +494,9 @@
     }
 
     .app.task-running .task-area {
-      min-height: 100vh;
-      min-height: 100svh;
+      height: 100vh;
+      height: 100svh;
+      min-height: 0;
       grid-template-columns: minmax(220px, 300px);
       grid-template-areas:
         "battery"
@@ -499,14 +509,21 @@
     }
 
     .app.task-running .stage {
-      min-height: 100vh;
-      min-height: 100svh;
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      height: 100svh;
+      min-height: 0;
       display: grid;
-      place-items: center;
+      align-content: start;
+      justify-items: center;
       padding: 0;
       border: 0;
+      border-radius: 0;
       box-shadow: none;
       background: transparent;
+      overflow: hidden;
     }
 
     .app.task-running .trial-panel {
@@ -537,6 +554,11 @@
 
     .practice-hint[hidden] {
       display: none;
+    }
+
+    .app.task-running .practice-hint:not([hidden]) + .task-area {
+      height: calc(100vh - 42px);
+      height: calc(100svh - 42px);
     }
 
     .app.task-running .response {
@@ -726,18 +748,20 @@
       }
 
       .app.task-running .task-area {
-        min-height: 100svh;
-        gap: 12px;
+        height: 100svh;
+        min-height: 0;
+        gap: 10px;
         grid-template-columns: minmax(0, 1fr);
       }
 
       .app.task-running .stage {
-        min-height: 100svh;
+        height: 100svh;
+        min-height: 0;
       }
 
       .battery {
         width: min(210px, 58vw);
-        height: clamp(280px, 45svh, 330px);
+        height: clamp(250px, 40svh, 310px);
         border-width: 4px;
       }
 
@@ -770,16 +794,17 @@
       }
 
       .practice-hint {
-        top: 10px;
-        margin-bottom: 6px;
-        font-size: 22px;
+        top: 0;
+        margin-bottom: 2px;
+        font-size: clamp(18px, 5vw, 21px);
+        line-height: 1.22;
       }
 
       .response,
       .app.task-running .response {
         width: min(320px, 86vw);
-        height: 64px;
-        font-size: 24px;
+        height: 60px;
+        font-size: 23px;
       }
 
       .button-row {
@@ -804,12 +829,12 @@
     @media (max-width: 380px) {
       .battery {
         width: min(190px, 56vw);
-        height: clamp(250px, 42svh, 300px);
+        height: clamp(230px, 38svh, 280px);
       }
 
       .response,
       .app.task-running .response {
-        height: 60px;
+        height: 56px;
       }
 
       .app.task-running .task-area {
