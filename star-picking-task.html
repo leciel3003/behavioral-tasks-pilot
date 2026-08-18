@@ -141,6 +141,37 @@
       font-weight: 400;
     }
 
+    .instruction-next {
+      position: fixed;
+      right: max(18px, env(safe-area-inset-right));
+      bottom: max(18px, env(safe-area-inset-bottom));
+      width: clamp(64px, 17vw, 88px);
+      aspect-ratio: 1;
+      min-height: 0;
+      padding: 0;
+      border: 1px solid #b8bec0;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #f0f2f2 0%, #d9ddde 100%);
+      color: #303638;
+      font-size: clamp(34px, 9vw, 50px);
+      font-weight: 800;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 6px 0 #aeb5b7, 0 12px 18px rgba(45, 52, 54, .16);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .instruction-next:active {
+      transform: translateY(5px);
+      box-shadow: 0 1px 0 #aeb5b7, 0 5px 9px rgba(45, 52, 54, .12);
+    }
+
+    .instruction-next[hidden] {
+      display: none;
+    }
+
     header {
       display: flex;
       justify-content: space-between;
@@ -766,6 +797,7 @@
 목표별과 맞는 별을 골라주세요.</p>
       <p class="instruction-note" id="instructionNote" hidden></p>
     </div>
+    <button class="instruction-next" id="instructionNextBtn" type="button" aria-label="다음 안내로 이동" hidden>→</button>
   </div>
 
   <main class="app">
@@ -906,6 +938,7 @@
       instructionOverlay: document.getElementById("instructionOverlay"),
       instructionDetail: document.getElementById("instructionDetail"),
       instructionNote: document.getElementById("instructionNote"),
+      instructionNextBtn: document.getElementById("instructionNextBtn"),
       arena: document.getElementById("arena"),
       targetStimulus: document.getElementById("targetStimulus"),
       leftSide: document.getElementById("leftSide"),
@@ -1526,6 +1559,7 @@
       els.startBtn.textContent = "시작";
       document.querySelector(".app").classList.remove("task-running");
       els.instructionOverlay.hidden = true;
+      els.instructionNextBtn.hidden = true;
       setOverlay(true, "별 고르기", "");
       renderStatus();
       renderLog();
@@ -1542,6 +1576,7 @@
 
     function beginTask() {
       els.instructionOverlay.hidden = true;
+      els.instructionNextBtn.hidden = true;
       document.querySelector(".app").classList.add("task-running");
       state.active = true;
       nextTrial();
@@ -1550,9 +1585,9 @@
     function showInstructionStep(detail, note, action) {
       window.clearTimeout(state.introTimer);
       els.instructionDetail.textContent = detail;
-      const enterPrompt = "이해했으면 엔터를 눌러 주세요.";
-      els.instructionNote.textContent = note ? `${note}\n${enterPrompt}` : enterPrompt;
-      els.instructionNote.hidden = false;
+      els.instructionNote.textContent = note || "";
+      els.instructionNote.hidden = !note;
+      els.instructionNextBtn.hidden = false;
       els.instructionOverlay.hidden = false;
       state.pendingInstructionAction = action;
     }
@@ -1561,6 +1596,7 @@
       if (!state.pendingInstructionAction) return false;
       const action = state.pendingInstructionAction;
       state.pendingInstructionAction = null;
+      els.instructionNextBtn.hidden = true;
       action();
       return true;
     }
@@ -1584,6 +1620,7 @@
       els.feedback.classList.remove("is-visible");
       showInstructionStep("실험을 시작합니다.", "", () => {
         els.instructionOverlay.hidden = true;
+        els.instructionNextBtn.hidden = true;
         state.locked = false;
         state.active = true;
         showFixation();
@@ -1898,11 +1935,6 @@
         event.stopPropagation();
         return;
       }
-      if (event.key === "Enter" && completeInstructionEnter()) {
-        event.preventDefault();
-        event.stopPropagation();
-        return;
-      }
       recordKeyboardEvent(event, "keydown");
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
         event.preventDefault();
@@ -1941,6 +1973,15 @@
 
     els.startBtn.addEventListener("click", startTask);
     els.resetBtn.addEventListener("click", resetTask);
+    els.instructionNextBtn.addEventListener("click", (event) => {
+      if (completeInstructionEnter()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    });
+    els.instructionNextBtn.addEventListener("pointerdown", (event) => {
+      event.stopPropagation();
+    });
     els.leftSide.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();

@@ -159,6 +159,37 @@
       line-height: 1.35;
     }
 
+    .instruction-next {
+      position: fixed;
+      right: max(18px, env(safe-area-inset-right));
+      bottom: max(18px, env(safe-area-inset-bottom));
+      width: clamp(64px, 17vw, 88px);
+      aspect-ratio: 1;
+      min-height: 0;
+      padding: 0;
+      border: 1px solid #b8bec0;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #f0f2f2 0%, #d9ddde 100%);
+      color: #303638;
+      font-size: clamp(34px, 9vw, 50px);
+      font-weight: 800;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 6px 0 #aeb5b7, 0 12px 18px rgba(45, 52, 54, .16);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .instruction-next:active {
+      transform: translateY(5px);
+      box-shadow: 0 1px 0 #aeb5b7, 0 5px 9px rgba(45, 52, 54, .12);
+    }
+
+    .instruction-next[hidden] {
+      display: none;
+    }
+
     .settings-drawer {
       margin: 0 auto 16px;
       max-width: 760px;
@@ -848,8 +879,9 @@
     <div class="instruction-content">
       <h2 id="instructionTitle">준비</h2>
       <p id="instructionDetail"></p>
-      <div class="instruction-countdown" id="instructionCountdown">이해했으면 엔터를 눌러 주세요.</div>
+      <div class="instruction-countdown" id="instructionCountdown"></div>
     </div>
+    <button class="instruction-next" id="instructionNextBtn" type="button" aria-label="다음 안내로 이동" hidden>→</button>
   </div>
 
   <main class="app prestart">
@@ -1453,15 +1485,18 @@
       state.instructionCountdownTimer = null;
       state.pendingInstructionAction = null;
       document.getElementById("instructionOverlay").hidden = true;
+      document.getElementById("instructionNextBtn").hidden = true;
     }
 
     function waitForInstructionEnter(action) {
       const prompt = document.getElementById("instructionCountdown");
+      const nextBtn = document.getElementById("instructionNextBtn");
       window.clearInterval(state.instructionCountdownTimer);
       state.instructionCountdownTimer = null;
-      prompt.textContent = "이해했으면 엔터를 눌러 주세요.";
-      prompt.classList.add("is-enter-prompt");
-      prompt.style.display = "block";
+      prompt.textContent = "";
+      prompt.classList.remove("is-enter-prompt");
+      prompt.style.display = "none";
+      nextBtn.hidden = false;
       state.pendingInstructionAction = action;
     }
 
@@ -1470,6 +1505,7 @@
       const action = state.pendingInstructionAction;
       state.pendingInstructionAction = null;
       document.getElementById("instructionCountdown").classList.remove("is-enter-prompt");
+      document.getElementById("instructionNextBtn").hidden = true;
       action();
       return true;
     }
@@ -1792,6 +1828,7 @@
       document.getElementById("instructionDetail").textContent =
         "첫 번째 과제가 종료되었습니다.\n두 번째 과제가 곧 시작됩니다.";
       document.getElementById("instructionCountdown").style.display = "none";
+      document.getElementById("instructionNextBtn").hidden = true;
       overlay.hidden = false;
     }
 
@@ -2217,6 +2254,15 @@
     els.responseBtn.addEventListener("click", () => respond({ input_source: "button", is_auto_repeat: 0 }));
     els.exportBtn.addEventListener("click", exportCsv);
     els.uploadBtn.addEventListener("click", uploadToGoogleSheets);
+    document.getElementById("instructionNextBtn").addEventListener("click", (event) => {
+      if (completeInstructionEnter()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    });
+    document.getElementById("instructionNextBtn").addEventListener("pointerdown", (event) => {
+      event.stopPropagation();
+    });
     document.addEventListener("pointerdown", enterFullscreen);
     document.addEventListener("keydown", enterFullscreen);
     window.addEventListener("keydown", (event) => {
@@ -2225,11 +2271,6 @@
         return;
       }
       if (shouldBlockExperimentShortcut(event)) {
-        event.preventDefault();
-        event.stopPropagation();
-        return;
-      }
-      if (event.key === "Enter" && completeInstructionEnter()) {
         event.preventDefault();
         event.stopPropagation();
         return;
